@@ -1,0 +1,115 @@
+{
+  "name": "{{kebabCase projectName}}",
+  "version": "{{version}}",
+  "description": "{{description}}",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsup",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    {{#if prisma}}
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:studio": "prisma studio",
+    "db:seed": "tsx prisma/seed.ts",
+    {{/if}}
+    {{#if drizzle}}
+    "db:generate": "drizzle-kit generate",
+    "db:push": "drizzle-kit push",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio",
+    {{/if}}
+    "generate": "opengenerator generate",
+    "generate:watch": "opengenerator watch"
+  },
+  "dependencies": {
+    {{#if express}}
+    "express": "^4.21.0",
+    "cors": "^2.8.5",
+    "helmet": "^8.0.0",
+    "compression": "^1.7.4",
+    {{/if}}
+    {{#if fastify}}
+    "fastify": "^5.0.0",
+    "@fastify/cors": "^10.0.0",
+    "@fastify/helmet": "^12.0.0",
+    "@fastify/compress": "^8.0.0",
+    {{#if swagger}}
+    "@fastify/swagger": "^9.0.0",
+    "@fastify/swagger-ui": "^5.0.0",
+    {{/if}}
+    {{/if}}
+    {{#if hono}}
+    "hono": "^4.6.0",
+    {{/if}}
+    {{#if prisma}}
+    "@prisma/client": "^6.0.0",
+    {{/if}}
+    {{#if drizzle}}
+    "drizzle-orm": "^0.35.0",
+    {{#if postgres}}
+    "postgres": "^3.4.0",
+    {{/if}}
+    {{/if}}
+    {{#if jwt}}
+    "jose": "^5.9.0",
+    {{/if}}
+    {{#if oauth}}
+    "arctic": "^2.0.0",
+    {{/if}}
+    {{#if graphql}}
+    "graphql": "^16.9.0",
+    "graphql-yoga": "^5.7.0",
+    "dataloader": "^2.2.0",
+    {{/if}}
+    {{#if trpc}}
+    "@trpc/server": "^11.0.0",
+    {{/if}}
+    "zod": "^3.23.0",
+    "dotenv": "^16.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    {{#if express}}
+    "@types/express": "^5.0.0",
+    "@types/cors": "^2.8.0",
+    "@types/compression": "^1.7.0",
+    {{/if}}
+    "typescript": "^5.6.0",
+    "tsup": "^8.3.0",
+    "tsx": "^4.19.0",
+    "vitest": "^2.1.0",
+    {{#if prisma}}
+    "prisma": "^6.0.0",
+    {{/if}}
+    {{#if drizzle}}
+    "drizzle-kit": "^0.28.0",
+    {{/if}}
+    "eslint": "^9.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "opengenerator": "workspace:*"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "author": "{{author}}",
+  "license": "{{license}}"
+}

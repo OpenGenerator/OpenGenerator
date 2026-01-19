@@ -1,0 +1,47 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "name": "{{kebabCase projectName}}",
+  "version": 2,
+  "buildCommand": "{{#if usePnpm}}pnpm{{else}}npm run{{/if}} build",
+  "outputDirectory": "dist",
+  "installCommand": "{{#if usePnpm}}pnpm install{{else}}npm ci{{/if}}",
+  "framework": null,
+  "functions": {
+    "api/**/*.ts": {
+      "runtime": "@vercel/node@{{vercelNodeVersion}}",
+      "maxDuration": {{maxDuration}}
+    }
+  },
+  "routes": [
+    {
+      "src": "/health",
+      "dest": "/api/health"
+    },
+{{#each entities}}
+    {
+      "src": "/{{../apiPrefix}}/{{pluralize (kebabCase name)}}(.*)",
+      "dest": "/api/{{pluralize (kebabCase name)}}$1"
+    },
+{{/each}}
+    {
+      "src": "/(.*)",
+      "dest": "/api/$1"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "{{corsOrigin}}" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET, POST, PUT, DELETE, OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type, Authorization" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "X-XSS-Protection", "value": "1; mode=block" }
+      ]
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  }
+}

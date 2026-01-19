@@ -1,0 +1,88 @@
+# @opengenerator/core
+
+> Core engine for OpenGenerator - Schema-to-API code generator
+
+## Quick Start
+
+npm install @opengenerator/core
+
+import { OpenGenerator, createGenerator } from '@opengenerator/core'
+
+const generator = createGenerator()
+  .parser(prismaParser())
+  .generator(restGenerator())
+  .adapter(fastifyAdapter())
+
+await generator.generate({
+  schema: './prisma/schema.prisma',
+  output: './generated',
+})
+
+## Core Concepts
+
+### Schema IR (Intermediate Representation)
+
+All parsers convert their input to a universal SchemaIR format:
+
+interface SchemaIR {
+  version: '1.0.0'
+  metadata: SchemaMetadata
+  models: Model[]
+  enums: Enum[]
+  relations: Relation[]
+}
+
+### Plugin Types
+
+- ParserPlugin: Converts schemas (OpenAPI, Prisma, Zod, etc.) to SchemaIR
+- GeneratorPlugin: Generates API code (REST, GraphQL, tRPC) from SchemaIR
+- AdapterPlugin: Adapts code for frameworks (Express, Fastify, Hono, etc.)
+- AuthPlugin: Adds authentication (JWT, OAuth, Session, etc.)
+- DatabasePlugin: Generates database layer (Prisma, Drizzle, etc.)
+- DeployPlugin: Generates deployment configs (Docker, Vercel, etc.)
+
+### OpenGenerator Class
+
+const generator = new OpenGenerator()
+  .parser(plugin)     // Required: Set schema parser
+  .generator(plugin)  // Required: Add API generator (can add multiple)
+  .adapter(plugin)    // Optional: Set framework adapter
+  .auth(plugin)       // Optional: Add auth (can add multiple)
+  .database(plugin)   // Optional: Set database adapter
+  .deploy(plugin)     // Optional: Add deployment (can add multiple)
+
+// Parse only
+const schema = await generator.parse('./schema.prisma')
+
+// Generate
+const code = await generator.generate(options)
+
+// Watch mode
+const watcher = generator.watch(options)
+
+## Configuration
+
+import { defineConfig } from '@opengenerator/core'
+
+export default defineConfig({
+  schema: './prisma/schema.prisma',
+  output: './generated',
+  api: { rest: true, graphql: true },
+  adapter: 'fastify',
+  auth: { strategies: ['jwt'] },
+  database: { adapter: 'prisma' },
+  deploy: ['docker'],
+})
+
+## Key Exports
+
+- OpenGenerator, createGenerator: Main generator class
+- Pipeline, createPipeline: Generation pipeline with hooks
+- TemplateEngine, templateEngine: Handlebars template engine
+- loadConfig, defineConfig: Configuration loading
+- PluginRegistry, globalRegistry: Plugin management
+
+## Links
+
+- Docs: https://opengenerator.dev/docs
+- GitHub: https://github.com/opengenerator/opengenerator

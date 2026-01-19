@@ -1,0 +1,159 @@
+// Realtime Chat Prisma Schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String         @id @default(cuid())
+  username     String         @unique
+  email        String         @unique
+  displayName  String?
+  avatarUrl    String?
+  status       UserStatus     @default(OFFLINE)
+  lastSeenAt   DateTime?
+  rooms        RoomMember[]
+  messages     Message[]
+  sentRequests FriendRequest[] @relation("SentRequests")
+  receivedRequests FriendRequest[] @relation("ReceivedRequests")
+  friends      Friendship[]   @relation("UserFriends")
+  friendOf     Friendship[]   @relation("FriendOf")
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+}
+
+model Room {
+  id          String       @id @default(cuid())
+  name        String?
+  type        RoomType     @default(DIRECT)
+  avatarUrl   String?
+  members     RoomMember[]
+  messages    Message[]
+  lastMessage Message?     @relation("LastMessage", fields: [lastMessageId], references: [id])
+  lastMessageId String?    @unique
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model RoomMember {
+  id        String   @id @default(cuid())
+  roomId    String
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      RoomRole @default(MEMBER)
+  nickname  String?
+  mutedUntil DateTime?
+  lastReadAt DateTime?
+  joinedAt  DateTime @default(now())
+
+  @@unique([roomId, userId])
+  @@index([userId])
+}
+
+model Message {
+  id          String       @id @default(cuid())
+  content     String
+  type        MessageType  @default(TEXT)
+  roomId      String
+  room        Room         @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  senderId    String
+  sender      User         @relation(fields: [senderId], references: [id])
+  replyToId   String?
+  replyTo     Message?     @relation("Replies", fields: [replyToId], references: [id])
+  replies     Message[]    @relation("Replies")
+  reactions   Reaction[]
+  attachments Attachment[]
+  editedAt    DateTime?
+  deletedAt   DateTime?
+  lastMessageOf Room?      @relation("LastMessage")
+  createdAt   DateTime     @default(now())
+
+  @@index([roomId])
+  @@index([senderId])
+}
+
+model Reaction {
+  id        String   @id @default(cuid())
+  emoji     String
+  messageId String
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  userId    String
+  createdAt DateTime @default(now())
+
+  @@unique([messageId, userId, emoji])
+}
+
+model Attachment {
+  id        String   @id @default(cuid())
+  url       String
+  name      String
+  size      Int
+  mimeType  String
+  messageId String
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model FriendRequest {
+  id         String              @id @default(cuid())
+  senderId   String
+  sender     User                @relation("SentRequests", fields: [senderId], references: [id])
+  receiverId String
+  receiver   User                @relation("ReceivedRequests", fields: [receiverId], references: [id])
+  status     FriendRequestStatus @default(PENDING)
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+
+  @@unique([senderId, receiverId])
+}
+
+model Friendship {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation("UserFriends", fields: [userId], references: [id])
+  friendId  String
+  friend    User     @relation("FriendOf", fields: [friendId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([userId, friendId])
+}
+
+// Enums
+enum UserStatus {
+  ONLINE
+  AWAY
+  DND
+  OFFLINE
+}
+
+enum RoomType {
+  DIRECT
+  GROUP
+  CHANNEL
+}
+
+enum RoomRole {
+  OWNER
+  ADMIN
+  MODERATOR
+  MEMBER
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  FILE
+  SYSTEM
+}
+
+enum FriendRequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}

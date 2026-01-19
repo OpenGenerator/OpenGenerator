@@ -1,0 +1,39 @@
+{
+  "name": "@opengenerator/adapter-koa",
+  "version": "1.0.0",
+  "description": "Koa adapter for OpenGenerator",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
+      "require": { "types": "./dist/index.d.cts", "default": "./dist/index.cjs" }
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "clean": "rimraf dist"
+  },
+  "dependencies": { "@opengenerator/core": "workspace:*" },
+  "peerDependencies": { "koa": "^2.0.0" },
+  "devDependencies": {
+    "@types/koa": "^2.14.0",
+    "@types/koa-router": "^7.4.8",
+    "@types/koa-bodyparser": "^4.3.12",
+    "@types/node": "^20.11.0",
+    "koa": "^2.15.0",
+    "rimraf": "^5.0.5",
+    "tsup": "^8.0.1",
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.0"
+  },
+  "keywords": ["opengenerator", "koa", "adapter", "api"],
+  "author": "Ersin KOC",
+  "license": "MIT"
+}

@@ -1,0 +1,8 @@
+---
+import type { Props } from '@astrojs/starlight/props'
+import Default from '@astrojs/starlight/components/Hero.astro'
+
+const { hero, ...rest } = Astro.props
+---
+
+<Default hero={hero} {...rest} />

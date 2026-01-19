@@ -1,0 +1,18 @@
+{
+  "name": "@opengenerator/db-kysely",
+  "version": "1.0.0",
+  "description": "Kysely database adapter for OpenGenerator",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": { ".": { "import": { "types": "./dist/index.d.ts", "default": "./dist/index.js" }, "require": { "types": "./dist/index.d.cts", "default": "./dist/index.cjs" } } },
+  "files": ["dist"],
+  "scripts": { "build": "tsup", "dev": "tsup --watch", "test": "vitest run", "typecheck": "tsc --noEmit", "clean": "rimraf dist" },
+  "dependencies": { "@opengenerator/core": "workspace:*" },
+  "peerDependencies": { "kysely": "^0.27.0" },
+  "devDependencies": { "@types/node": "^20.11.0", "kysely": "^0.27.0", "rimraf": "^5.0.5", "tsup": "^8.0.1", "typescript": "^5.3.3", "vitest": "^1.2.0" },
+  "keywords": ["opengenerator", "database", "kysely", "query-builder"],
+  "author": "Ersin KOC",
+  "license": "MIT"
+}

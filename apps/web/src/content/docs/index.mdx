@@ -1,0 +1,147 @@
+---
+title: OpenGenerator
+description: Schema-to-API Code Generator - Transform your schemas into production-ready APIs
+template: splash
+hero:
+  tagline: Transform your schemas into production-ready APIs in seconds
+  image:
+    alt: OpenGenerator - Schema to API
+    file: ../../assets/hero.svg
+  actions:
+    - text: Get Started
+      link: /guides/quick-start/
+      icon: right-arrow
+      variant: primary
+    - text: View on GitHub
+      link: https://github.com/opengenerator/opengenerator
+      icon: external
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## Why OpenGenerator?
+
+<CardGrid stagger>
+  <Card title="Schema-First" icon="document">
+    Start with your schema (Prisma, OpenAPI, Zod, etc.) and generate a complete API with types, validation, and documentation.
+  </Card>
+  <Card title="Framework Agnostic" icon="setting">
+    Works with Express, Fastify, Hono, Koa, or run standalone. Switch frameworks without rewriting your code.
+  </Card>
+  <Card title="Type-Safe" icon="approve-check">
+    Full TypeScript support with end-to-end type safety from database to API response.
+  </Card>
+  <Card title="Production Ready" icon="rocket">
+    Includes authentication, validation, error handling, rate limiting, and deployment configs out of the box.
+  </Card>
+</CardGrid>
+
+## Quick Start
+
+```bash
+# Install OpenGenerator
+npm install opengenerator
+
+# Initialize a new project
+npx opengenerator init
+
+# Generate your API
+npx opengenerator generate
+```
+
+## Choose Your Stack
+
+<CardGrid>
+  <Card title="REST API" icon="seti:html">
+    Generate RESTful endpoints with OpenAPI documentation, Zod validation, and standardized error responses.
+  </Card>
+  <Card title="GraphQL" icon="seti:graphql">
+    Create GraphQL schemas, resolvers, and subscriptions with DataLoader batching and Relay-style pagination.
+  </Card>
+  <Card title="tRPC" icon="seti:typescript">
+    Build type-safe APIs with tRPC routers, automatic client generation, and end-to-end TypeScript.
+  </Card>
+</CardGrid>
+
+## Supported Technologies
+
+### Schema Parsers
+- **Prisma** - Parse Prisma schema files
+- **OpenAPI** - Parse OpenAPI 3.x specifications
+- **JSON Schema** - Parse JSON Schema definitions
+- **Zod** - Parse Zod schema definitions
+- **TypeBox** - Parse TypeBox schemas
+- **VLD** - Parse VLD validation schemas
+
+### Framework Adapters
+- **Express** - Classic Node.js framework
+- **Fastify** - High-performance framework
+- **Hono** - Ultrafast edge framework
+- **Koa** - Next-generation Express
+- **Standalone** - Zero dependencies
+
+### Authentication
+- **JWT** - JSON Web Token authentication
+- **OAuth** - OAuth 2.0 providers (Google, GitHub, etc.)
+- **Session** - Cookie-based sessions
+- **API Key** - API key authentication
+- **Magic Link** - Passwordless email login
+- **Passkey** - WebAuthn/FIDO2 authentication
+
+### Database Adapters
+- **Prisma** - Type-safe ORM
+- **Drizzle** - Lightweight TypeScript ORM
+- **Kysely** - Type-safe SQL query builder
+- **TypeORM** - Full-featured ORM
+- **Mongoose** - MongoDB ODM
+- **Raw SQL** - Direct SQL queries
+
+### Deployment
+- **Docker** - Container deployment
+- **Vercel** - Serverless deployment
+- **Railway** - Platform deployment
+- **Fly.io** - Edge deployment
+- **AWS Lambda** - Serverless functions
+- **Kubernetes** - Container orchestration
+
+## Example Configuration
+
+```typescript
+import { defineConfig } from 'opengenerator'
+
+export default defineConfig({
+  schema: './prisma/schema.prisma',
+  output: './generated',
+
+  api: {
+    rest: { enabled: true, prefix: '/api/v1' },
+    graphql: { enabled: true },
+  },
+
+  adapter: 'fastify',
+  auth: { strategies: ['jwt'] },
+  database: { adapter: 'prisma' },
+  deploy: ['docker'],
+})
+```
+
+## Presets for Common Use Cases
+
+- **fullstack-prisma** - Full-stack with Prisma + REST + GraphQL + Fastify
+- **serverless-drizzle** - Serverless with Drizzle + REST + Hono + Vercel
+- **graphql-apollo** - GraphQL-first with Apollo Server
+- **minimal-rest** - Minimal REST API with API key auth
+- **enterprise** - All features enabled for enterprise apps
+
+## Ready to get started?
+
+<CardGrid>
+  <Card title="Quick Start Guide" icon="rocket">
+    Follow our step-by-step guide to create your first API in minutes.
+    [Get started →](/guides/quick-start/)
+  </Card>
+  <Card title="Examples" icon="open-book">
+    Explore real-world examples including e-commerce, SaaS, and microservices.
+    [View examples →](https://github.com/opengenerator/opengenerator/tree/main/examples)
+  </Card>
+</CardGrid>

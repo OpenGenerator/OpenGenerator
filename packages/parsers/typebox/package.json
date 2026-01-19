@@ -1,0 +1,44 @@
+{
+  "name": "@opengenerator/parser-typebox",
+  "version": "1.0.0",
+  "description": "TypeBox schema parser for OpenGenerator",
+  "author": "Ersin KOC",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "clean": "rm -rf dist coverage"
+  },
+  "dependencies": {
+    "@opengenerator/core": "workspace:*",
+    "@sinclair/typebox": "^0.32.0",
+    "ts-morph": "^22.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.3.0",
+    "vitest": "^2.0.0"
+  },
+  "keywords": ["opengenerator", "parser", "typebox", "schema"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/opengenerator/opengenerator.git",
+    "directory": "packages/parsers/typebox"
+  }
+}

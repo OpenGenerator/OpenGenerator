@@ -1,0 +1,25 @@
+{
+  "name": "@opengenerator/preset-graphql-apollo",
+  "version": "1.0.0",
+  "description": "GraphQL Apollo preset for OpenGenerator",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": { ".": { "import": { "types": "./dist/index.d.ts", "default": "./dist/index.js" }, "require": { "types": "./dist/index.d.cts", "default": "./dist/index.cjs" } } },
+  "files": ["dist"],
+  "scripts": { "build": "tsup", "dev": "tsup --watch", "test": "vitest run", "typecheck": "tsc --noEmit", "clean": "rimraf dist" },
+  "dependencies": {
+    "@opengenerator/core": "workspace:*",
+    "@opengenerator/parser-prisma": "workspace:*",
+    "@opengenerator/gen-graphql": "workspace:*",
+    "@opengenerator/adapter-express": "workspace:*",
+    "@opengenerator/auth-oauth": "workspace:*",
+    "@opengenerator/db-prisma": "workspace:*",
+    "@opengenerator/deploy-docker": "workspace:*"
+  },
+  "devDependencies": { "@types/node": "^20.11.0", "rimraf": "^5.0.5", "tsup": "^8.0.1", "typescript": "^5.3.3", "vitest": "^1.2.0" },
+  "keywords": ["opengenerator", "preset", "graphql", "apollo"],
+  "author": "Ersin KOC",
+  "license": "MIT"
+}

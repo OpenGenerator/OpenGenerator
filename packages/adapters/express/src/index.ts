@@ -1,0 +1,449 @@
+/**
+ * @opengenerator/adapter-express
+ *
+ * Express adapter for OpenGenerator.
+ * Transforms generated code for Express framework.
+ */
+
+import type {
+  AdapterPlugin,
+  AdapterOptions,
+  GeneratedCode,
+  GeneratedFile,
+  Dependency,
+  FrameworkType,
+} from '@opengenerator/core'
+
+export interface ExpressAdapterOptions {
+  /**
+   * Use async error handling wrapper
+   */
+  asyncHandler?: boolean
+
+  /**
+   * Generate validation middleware
+   */
+  validation?: boolean
+
+  /**
+   * Generate rate limiting middleware
+   */
+  rateLimiting?: boolean
+
+  /**
+   * Generate CORS middleware
+   */
+  cors?: boolean
+
+  /**
+   * Generate helmet security middleware
+   */
+  helmet?: boolean
+
+  /**
+   * Generate request logging middleware
+   */
+  logging?: boolean
+
+  /**
+   * Generate compression middleware
+   */
+  compression?: boolean
+
+  /**
+   * Generate error handling middleware
+   */
+  errorHandler?: boolean
+
+  /**
+   * Generate OpenAPI documentation route
+   */
+  openapi?: boolean
+
+  /**
+   * Router prefix
+   */
+  prefix?: string
+}
+
+const DEFAULT_OPTIONS: ExpressAdapterOptions = {
+  asyncHandler: true,
+  validation: true,
+  rateLimiting: false,
+  cors: true,
+  helmet: true,
+  logging: true,
+  compression: true,
+  errorHandler: true,
+  openapi: true,
+  prefix: '/api',
+}
+
+/**
+ * Generate async handler wrapper
+ */
+function generateAsyncHandler(): string {
+  return `/**
+ * Async Handler Wrapper
+ * Wraps async route handlers to catch errors
+ */
+import type { Request, Response, NextFunction, RequestHandler } from 'express'
+
+export function asyncHandler(
+  fn: (req: Request, res: Response, next: NextFunction) => Promise<unknown>
+): RequestHandler {
+  return (req, res, next) => {
+    Promise.resolve(fn(req, res, next)).catch(next)
+  }
+}
+`
+}
+
+/**
+ * Generate error handler middleware
+ */
+function generateErrorHandler(): string {
+  return `/**
+ * Error Handler Middleware
+ */
+import type { Request, Response, NextFunction, ErrorRequestHandler } from 'express'
+
+export interface AppError extends Error {
+  statusCode?: number
+  code?: string
+  details?: unknown
+}
+
+export const errorHandler: ErrorRequestHandler = (
+  err: AppError,
+  req: Request,
+  res: Response,
+  _next: NextFunction
+) => {
+  const statusCode = err.statusCode || 500
+  const message = err.message || 'Internal Server Error'
+
+  console.error(\`[Error] \${req.method} \${req.path}:\`, err)
+
+  res.status(statusCode).json({
+    success: false,
+    error: {
+      message,
+      code: err.code || 'INTERNAL_ERROR',
+      ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+      ...(err.details && { details: err.details }),
+    },
+  })
+}
+
+export class HttpError extends Error implements AppError {
+  statusCode: number
+  code: string
+  details?: unknown
+
+  constructor(statusCode: number, message: string, code?: string, details?: unknown) {
+    super(message)
+    this.name = 'HttpError'
+    this.statusCode = statusCode
+    this.code = code || 'HTTP_ERROR'
+    this.details = details
+  }
+
+  static badRequest(message = 'Bad Request', details?: unknown) {
+    return new HttpError(400, message, 'BAD_REQUEST', details)
+  }
+
+  static unauthorized(message = 'Unauthorized') {
+    return new HttpError(401, message, 'UNAUTHORIZED')
+  }
+
+  static forbidden(message = 'Forbidden') {
+    return new HttpError(403, message, 'FORBIDDEN')
+  }
+
+  static notFound(message = 'Not Found') {
+    return new HttpError(404, message, 'NOT_FOUND')
+  }
+
+  static conflict(message = 'Conflict', details?: unknown) {
+    return new HttpError(409, message, 'CONFLICT', details)
+  }
+
+  static internal(message = 'Internal Server Error') {
+    return new HttpError(500, message, 'INTERNAL_ERROR')
+  }
+}
+`
+}
+
+/**
+ * Generate validation middleware
+ */
+function generateValidation(): string {
+  return `/**
+ * Validation Middleware
+ */
+import type { Request, Response, NextFunction } from 'express'
+import { z, ZodSchema, ZodError } from 'zod'
+import { HttpError } from './error-handler'
+
+export interface ValidationSchemas {
+  body?: ZodSchema
+  query?: ZodSchema
+  params?: ZodSchema
+}
+
+export function validate(schemas: ValidationSchemas) {
+  return async (req: Request, _res: Response, next: NextFunction) => {
+    try {
+      if (schemas.body) {
+        req.body = await schemas.body.parseAsync(req.body)
+      }
+      if (schemas.query) {
+        req.query = await schemas.query.parseAsync(req.query) as any
+      }
+      if (schemas.params) {
+        req.params = await schemas.params.parseAsync(req.params) as any
+      }
+      next()
+    } catch (error) {
+      if (error instanceof ZodError) {
+        next(HttpError.badRequest('Validation failed', error.errors))
+      } else {
+        next(error)
+      }
+    }
+  }
+}
+`
+}
+
+/**
+ * Generate app setup
+ */
+function generateApp(options: ExpressAdapterOptions): string {
+  const lines: string[] = [
+    '/**',
+    ' * Express App Setup',
+    ' * Auto-generated by @opengenerator/adapter-express',
+    ' */',
+    '',
+    "import express, { Express } from 'express'",
+  ]
+
+  if (options.cors) {
+    lines.push("import cors from 'cors'")
+  }
+  if (options.helmet) {
+    lines.push("import helmet from 'helmet'")
+  }
+  if (options.compression) {
+    lines.push("import compression from 'compression'")
+  }
+  if (options.logging) {
+    lines.push("import morgan from 'morgan'")
+  }
+
+  if (options.errorHandler) {
+    lines.push("import { errorHandler } from './middleware/error-handler'")
+  }
+
+  lines.push('')
+  lines.push('export interface AppOptions {')
+  lines.push('  repositories: Record<string, unknown>')
+  if (options.cors) {
+    lines.push('  corsOptions?: cors.CorsOptions')
+  }
+  lines.push('}')
+  lines.push('')
+
+  lines.push('export function createApp(options: AppOptions): Express {')
+  lines.push('  const app = express()')
+  lines.push('')
+
+  if (options.helmet) {
+    lines.push('  // Security headers')
+    lines.push('  app.use(helmet())')
+    lines.push('')
+  }
+
+  if (options.cors) {
+    lines.push('  // CORS')
+    lines.push('  app.use(cors(options.corsOptions))')
+    lines.push('')
+  }
+
+  if (options.compression) {
+    lines.push('  // Compression')
+    lines.push('  app.use(compression())')
+    lines.push('')
+  }
+
+  lines.push('  // Body parsing')
+  lines.push('  app.use(express.json())')
+  lines.push('  app.use(express.urlencoded({ extended: true }))')
+  lines.push('')
+
+  if (options.logging) {
+    lines.push('  // Request logging')
+    lines.push("  app.use(morgan('combined'))")
+    lines.push('')
+  }
+
+  lines.push('  // Health check')
+  lines.push("  app.get('/health', (req, res) => {")
+  lines.push("    res.json({ status: 'ok', timestamp: new Date().toISOString() })")
+  lines.push('  })')
+  lines.push('')
+
+  if (options.errorHandler) {
+    lines.push('  // Error handling')
+    lines.push('  app.use(errorHandler)')
+    lines.push('')
+  }
+
+  lines.push('  return app')
+  lines.push('}')
+  lines.push('')
+
+  return lines.join('\n')
+}
+
+/**
+ * Generate index file
+ */
+function generateIndex(options: ExpressAdapterOptions): string {
+  const lines: string[] = [
+    '/**',
+    ' * Express Adapter - Main Entry',
+    ' * Auto-generated by @opengenerator/adapter-express',
+    ' */',
+    '',
+    "export { createApp, type AppOptions } from './app'",
+  ]
+
+  if (options.asyncHandler) {
+    lines.push("export { asyncHandler } from './utils/async-handler'")
+  }
+  if (options.errorHandler) {
+    lines.push("export { errorHandler, HttpError, type AppError } from './middleware/error-handler'")
+  }
+  if (options.validation) {
+    lines.push("export { validate, type ValidationSchemas } from './middleware/validation'")
+  }
+
+  lines.push('')
+
+  return lines.join('\n')
+}
+
+/**
+ * Create the Express adapter plugin
+ */
+export function createExpressAdapter(options: ExpressAdapterOptions = {}): AdapterPlugin {
+  const mergedOptions = { ...DEFAULT_OPTIONS, ...options }
+
+  return {
+    name: '@opengenerator/adapter-express',
+    version: '1.0.0',
+    framework: 'express' as FrameworkType,
+
+    async adapt(code: GeneratedCode, _options: AdapterOptions): Promise<GeneratedCode> {
+      const files: GeneratedFile[] = [...code.files]
+
+      // Generate async handler
+      if (mergedOptions.asyncHandler) {
+        files.push({
+          path: 'utils/async-handler.ts',
+          content: generateAsyncHandler(),
+          type: 'source',
+        })
+      }
+
+      // Generate error handler
+      if (mergedOptions.errorHandler) {
+        files.push({
+          path: 'middleware/error-handler.ts',
+          content: generateErrorHandler(),
+          type: 'source',
+        })
+      }
+
+      // Generate validation middleware
+      if (mergedOptions.validation) {
+        files.push({
+          path: 'middleware/validation.ts',
+          content: generateValidation(),
+          type: 'source',
+        })
+      }
+
+      // Generate app
+      files.push({
+        path: 'app.ts',
+        content: generateApp(mergedOptions),
+        type: 'source',
+      })
+
+      // Generate index
+      files.push({
+        path: 'index.ts',
+        content: generateIndex(mergedOptions),
+        type: 'source',
+      })
+
+      // Merge dependencies
+      const dependencies: Dependency[] = [
+        ...(code.dependencies || []),
+        ...this.getDependencies(),
+      ]
+
+      return {
+        files,
+        dependencies,
+        metadata: {
+          ...code.metadata,
+          adapter: '@opengenerator/adapter-express',
+          version: '1.0.0',
+          generatedAt: new Date().toISOString(),
+          options: mergedOptions,
+        },
+      }
+    },
+
+    getDependencies(): Dependency[] {
+      const deps: Dependency[] = [
+        { name: 'express', version: '^4.18.2', dev: false },
+        { name: '@types/express', version: '^4.17.21', dev: true },
+      ]
+
+      if (mergedOptions.validation) {
+        deps.push({ name: 'zod', version: '^3.22.0', dev: false })
+      }
+      if (mergedOptions.cors) {
+        deps.push({ name: 'cors', version: '^2.8.5', dev: false })
+        deps.push({ name: '@types/cors', version: '^2.8.17', dev: true })
+      }
+      if (mergedOptions.helmet) {
+        deps.push({ name: 'helmet', version: '^7.1.0', dev: false })
+      }
+      if (mergedOptions.compression) {
+        deps.push({ name: 'compression', version: '^1.7.4', dev: false })
+        deps.push({ name: '@types/compression', version: '^1.7.5', dev: true })
+      }
+      if (mergedOptions.logging) {
+        deps.push({ name: 'morgan', version: '^1.10.0', dev: false })
+        deps.push({ name: '@types/morgan', version: '^1.9.9', dev: true })
+      }
+
+      return deps
+    },
+  }
+}
+
+/**
+ * Default Express adapter instance
+ */
+export const expressAdapter = createExpressAdapter()
+
+export default expressAdapter

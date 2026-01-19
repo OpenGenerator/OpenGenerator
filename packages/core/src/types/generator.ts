@@ -1,0 +1,368 @@
+import type { SchemaIR } from './schema'
+
+/**
+ * Generator plugin interface
+ * Generators produce API code from SchemaIR
+ */
+export interface GeneratorPlugin {
+  /** Plugin name */
+  name: string
+  /** Plugin version */
+  version: string
+  /** API style this generator produces */
+  style: ApiStyle
+  /** Generator priority (higher runs first) */
+  priority?: number
+
+  /**
+   * Generate code from SchemaIR
+   * @param schema - Parsed schema
+   * @param options - Generator options
+   */
+  generate(schema: SchemaIR, options: GeneratorOptions): Promise<GeneratedCode>
+
+  /**
+   * Get required dependencies for generated code
+   */
+  getDependencies(): Dependency[]
+
+  /**
+   * Get peer dependencies
+   */
+  getPeerDependencies?(): Dependency[]
+
+  /**
+   * Post-process generated files
+   */
+  postProcess?(files: GeneratedFile[]): Promise<GeneratedFile[]>
+}
+
+/**
+ * API style types
+ */
+export type ApiStyle = 'rest' | 'graphql' | 'trpc'
+
+/**
+ * Generator options
+ */
+export interface GeneratorOptions {
+  /** Output directory */
+  output: string
+  /** Schema file path */
+  schema: string
+  /** Generate TypeScript */
+  typescript?: boolean
+  /** TypeScript strict mode */
+  strict?: boolean
+  /** REST-specific options */
+  rest?: RestOptions
+  /** GraphQL-specific options */
+  graphql?: GraphQLOptions
+  /** tRPC-specific options */
+  trpc?: TrpcOptions
+  /** Code style options */
+  codeStyle?: CodeStyleOptions
+  /** Feature flags */
+  features?: FeatureFlags
+  /** Custom options */
+  custom?: Record<string, unknown>
+}
+
+/**
+ * REST generator options
+ */
+export interface RestOptions {
+  /** API prefix (e.g., /api/v1) */
+  prefix?: string
+  /** Enable API versioning */
+  versioning?: boolean
+  /** API version */
+  version?: string
+  /** Pagination config */
+  pagination?: PaginationOptions
+  /** Enable sorting */
+  sorting?: boolean
+  /** Enable filtering */
+  filtering?: boolean
+  /** Response format */
+  responseFormat?: 'envelope' | 'direct'
+  /** Generate OpenAPI spec */
+  openapi?: boolean
+  /** OpenAPI spec options */
+  openapiOptions?: OpenApiOptions
+}
+
+/**
+ * Pagination options
+ */
+export interface PaginationOptions {
+  /** Pagination style */
+  style?: 'offset' | 'cursor'
+  /** Default page size */
+  defaultLimit?: number
+  /** Maximum page size */
+  maxLimit?: number
+  /** Parameter names */
+  params?: {
+    limit?: string
+    offset?: string
+    cursor?: string
+    page?: string
+  }
+}
+
+/**
+ * OpenAPI spec options
+ */
+export interface OpenApiOptions {
+  /** OpenAPI version */
+  version?: '3.0.0' | '3.1.0'
+  /** API title */
+  title?: string
+  /** API description */
+  description?: string
+  /** API version */
+  apiVersion?: string
+  /** Server URLs */
+  servers?: Array<{ url: string; description?: string }>
+  /** Contact info */
+  contact?: {
+    name?: string
+    email?: string
+    url?: string
+  }
+  /** License info */
+  license?: {
+    name: string
+    url?: string
+  }
+}
+
+/**
+ * GraphQL generator options
+ */
+export interface GraphQLOptions {
+  /** GraphQL endpoint path */
+  path?: string
+  /** Enable GraphQL playground */
+  playground?: boolean
+  /** Enable subscriptions */
+  subscriptions?: boolean
+  /** Subscription transport */
+  subscriptionTransport?: 'ws' | 'sse'
+  /** Enable federation */
+  federation?: boolean
+  /** Complexity limit */
+  complexity?: {
+    enabled?: boolean
+    maxComplexity?: number
+    defaultFieldComplexity?: number
+  }
+  /** Depth limit */
+  depthLimit?: number
+}
+
+/**
+ * tRPC generator options
+ */
+export interface TrpcOptions {
+  /** Base path for tRPC endpoint */
+  basePath?: string
+  /** Enable batching */
+  batching?: boolean
+  /** Enable SSE for subscriptions */
+  sse?: boolean
+  /** Enable WebSocket for subscriptions */
+  ws?: boolean
+}
+
+/**
+ * Code style options
+ */
+export interface CodeStyleOptions {
+  /** Use semicolons */
+  semicolons?: boolean
+  /** Quote style */
+  quotes?: 'single' | 'double'
+  /** Indentation */
+  indent?: 'tabs' | 'spaces'
+  /** Indent size (for spaces) */
+  indentSize?: number
+  /** Trailing commas */
+  trailingCommas?: 'none' | 'es5' | 'all'
+  /** Print width */
+  printWidth?: number
+}
+
+/**
+ * Feature flags
+ */
+export interface FeatureFlags {
+  /** Generate Swagger/OpenAPI docs */
+  swagger?: boolean
+  /** Enable CORS */
+  cors?: boolean
+  /** Rate limiting */
+  rateLimit?: RateLimitOptions | boolean
+  /** Logging */
+  logging?: LoggingOptions | boolean
+  /** Request validation */
+  validation?: boolean
+  /** Error handling */
+  errorHandling?: boolean
+  /** Health check endpoint */
+  healthCheck?: boolean
+  /** Metrics endpoint */
+  metrics?: boolean
+  /** Response caching */
+  caching?: CachingOptions | boolean
+  /** Compression */
+  compression?: boolean
+}
+
+/**
+ * Rate limit options
+ */
+export interface RateLimitOptions {
+  /** Max requests */
+  max?: number
+  /** Time window in ms */
+  windowMs?: number
+  /** Error message */
+  message?: string
+}
+
+/**
+ * Logging options
+ */
+export interface LoggingOptions {
+  /** Log level */
+  level?: 'debug' | 'info' | 'warn' | 'error'
+  /** Log format */
+  format?: 'json' | 'pretty'
+  /** Include request body */
+  includeBody?: boolean
+  /** Include response body */
+  includeResponse?: boolean
+}
+
+/**
+ * Caching options
+ */
+export interface CachingOptions {
+  /** Cache TTL in seconds */
+  ttl?: number
+  /** Cache store */
+  store?: 'memory' | 'redis'
+  /** Cache key prefix */
+  prefix?: string
+}
+
+/**
+ * Generated code output
+ */
+export interface GeneratedCode {
+  /** Generated files */
+  files: GeneratedFile[]
+  /** Required dependencies */
+  dependencies: Dependency[]
+  /** Optional metadata about the generated code */
+  metadata?: Record<string, unknown>
+}
+
+/**
+ * Generated file
+ */
+export interface GeneratedFile {
+  /** Relative file path */
+  path: string
+  /** File content */
+  content: string
+  /** File type for categorization */
+  type?: 'source' | 'config' | 'test' | 'migration' | 'schema' | 'documentation'
+  /** Overwrite existing file */
+  overwrite?: boolean
+  /** File encoding */
+  encoding?: BufferEncoding
+  /** File permissions */
+  mode?: number
+}
+
+/**
+ * Package dependency
+ */
+export interface Dependency {
+  /** Package name */
+  name: string
+  /** Version range */
+  version: string
+  /** Dependency type */
+  type?: 'dependencies' | 'devDependencies' | 'peerDependencies'
+  /** Shorthand for devDependencies */
+  dev?: boolean
+}
+
+/**
+ * Generator factory function type
+ */
+export type GeneratorFactory<T extends GeneratorOptions = GeneratorOptions> = (
+  options?: Partial<T>
+) => GeneratorPlugin
+
+/**
+ * Create a base generator plugin
+ */
+export function createGeneratorPlugin(config: {
+  name: string
+  version: string
+  style: ApiStyle
+  generate: GeneratorPlugin['generate']
+  getDependencies: GeneratorPlugin['getDependencies']
+  getPeerDependencies?: GeneratorPlugin['getPeerDependencies']
+  postProcess?: GeneratorPlugin['postProcess']
+  priority?: number
+}): GeneratorPlugin {
+  return {
+    name: config.name,
+    version: config.version,
+    style: config.style,
+    priority: config.priority ?? 0,
+    generate: config.generate,
+    getDependencies: config.getDependencies,
+    getPeerDependencies: config.getPeerDependencies,
+    postProcess: config.postProcess,
+  }
+}
+
+/**
+ * Merge generated code objects
+ */
+export function mergeGeneratedCode(a: GeneratedCode, b: GeneratedCode): GeneratedCode {
+  return {
+    files: [...a.files, ...b.files],
+    dependencies: mergeDependencies(a.dependencies, b.dependencies),
+  }
+}
+
+/**
+ * Merge dependencies with version conflict resolution
+ */
+export function mergeDependencies(a: Dependency[], b: Dependency[]): Dependency[] {
+  const merged = new Map<string, Dependency>()
+
+  for (const dep of [...a, ...b]) {
+    const existing = merged.get(dep.name)
+    if (existing) {
+      // Simple version conflict resolution: prefer newer semver
+      const existingMajor = parseInt(existing.version.replace(/^\^|~/, '').split('.')[0] ?? '0')
+      const newMajor = parseInt(dep.version.replace(/^\^|~/, '').split('.')[0] ?? '0')
+      if (newMajor > existingMajor) {
+        merged.set(dep.name, dep)
+      }
+    } else {
+      merged.set(dep.name, dep)
+    }
+  }
+
+  return Array.from(merged.values())
+}

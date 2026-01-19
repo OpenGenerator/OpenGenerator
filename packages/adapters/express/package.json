@@ -1,0 +1,65 @@
+{
+  "name": "@opengenerator/adapter-express",
+  "version": "1.0.0",
+  "description": "Express adapter for OpenGenerator",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@opengenerator/core": "workspace:*"
+  },
+  "peerDependencies": {
+    "express": "^4.18.0 || ^5.0.0"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.11.0",
+    "express": "^4.18.2",
+    "rimraf": "^5.0.5",
+    "tsup": "^8.0.1",
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.0"
+  },
+  "keywords": [
+    "opengenerator",
+    "express",
+    "adapter",
+    "api",
+    "rest"
+  ],
+  "author": "Ersin KOC",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ersinkoc/opengenerator.git",
+    "directory": "packages/adapters/express"
+  },
+  "bugs": {
+    "url": "https://github.com/ersinkoc/opengenerator/issues"
+  },
+  "homepage": "https://opengenerator.dev"
+}

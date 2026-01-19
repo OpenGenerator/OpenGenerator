@@ -1,0 +1,58 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+*.tsbuildinfo
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Test coverage
+coverage/
+
+# Turborepo
+.turbo/
+
+# Next.js
+.next/
+out/
+
+# Astro
+.astro/
+
+# Cache
+.cache/
+.eslintcache
+
+# Generated
+generated/
+*.generated.*
+
+# Temporary
+tmp/
+temp/
+
+# Changeset
+.changeset/*.md
+!.changeset/README.md

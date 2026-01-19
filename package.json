@@ -1,0 +1,61 @@
+{
+  "name": "opengenerator-monorepo",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "description": "Schema-to-API code generator - CRUD, auth, validation, docs, deployment - all ready",
+  "author": "Ersin KOC",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/opengenerator/opengenerator.git"
+  },
+  "homepage": "https://opengenerator.dev",
+  "bugs": "https://github.com/opengenerator/opengenerator/issues",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "test": "turbo run test",
+    "test:watch": "turbo run test:watch",
+    "test:coverage": "turbo run test:coverage",
+    "lint": "turbo run lint",
+    "lint:fix": "turbo run lint:fix",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "typecheck": "turbo run typecheck",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "release": "changeset publish",
+    "changeset": "changeset",
+    "version": "changeset version",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.27.0",
+    "@types/node": "^20.11.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-import": "^2.29.0",
+    "husky": "^9.0.0",
+    "lint-staged": "^15.2.0",
+    "prettier": "^3.2.0",
+    "tsup": "^8.0.0",
+    "turbo": "^2.3.0",
+    "typescript": "^5.3.0",
+    "vitest": "^2.0.0",
+    "@vitest/coverage-v8": "^2.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yaml,yml}": [
+      "prettier --write"
+    ]
+  }
+}
