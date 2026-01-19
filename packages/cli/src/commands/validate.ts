@@ -43,7 +43,16 @@ export const validateCommand = new Command('validate')
       logger.newLine()
       logger.info('Validating schema...')
 
-      const schemaPath = options.schema ?? './prisma/schema.prisma'
+      // Get schema path from options, config, or default
+      let schemaPath = options.schema
+      if (!schemaPath) {
+        try {
+          const { config } = await loadConfig(options.config)
+          schemaPath = config.schema ?? './prisma/schema.prisma'
+        } catch {
+          schemaPath = './prisma/schema.prisma'
+        }
+      }
 
       try {
         const fs = await import('node:fs/promises')

@@ -49,9 +49,8 @@ export const watchCommand = new Command('watch')
       const watcher = createWatcher(
         generator,
         {
-          schema: config.schema,
-          output: resolve(config.output),
           ...config,
+          output: resolve(config.output),
         },
         {
           debounce: parseInt(options.debounce, 10),

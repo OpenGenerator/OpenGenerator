@@ -29,9 +29,47 @@ const DEFAULT_OPTIONS: StandaloneAdapterOptions = {
 }
 
 /**
- * Generate standalone HTTP server
+ * Extract route definitions from generated routes.ts file
  */
-function generateServer(options: StandaloneAdapterOptions): string {
+function extractRoutes(code: GeneratedCode): Array<{ method: string; path: string; handler: string }> {
+  const routesFile = code.files.find((f) => f.path === 'routes.ts' || f.path.endsWith('/routes.ts'))
+  if (!routesFile) return []
+
+  const routes: Array<{ method: string; path: string; handler: string }> = []
+  const routeRegex = /method:\s*['"](\w+)['"]\s*,\s*path:\s*['"]([^'"]+)['"]\s*,\s*handler:\s*['"]([^'"]+)['"]/g
+
+  let match
+  while ((match = routeRegex.exec(routesFile.content)) !== null) {
+    routes.push({
+      method: match[1] ?? '',
+      path: match[2] ?? '',
+      handler: match[3] ?? '',
+    })
+  }
+
+  return routes
+}
+
+/**
+ * Convert path pattern to regex
+ */
+function pathToRegex(path: string): { pattern: string; params: string[] } {
+  const params: string[] = []
+  // Escape forward slashes for regex, then replace :param with capture group
+  const escaped = path.replace(/\//g, '\\/').replace(/:(\w+)/g, (_match, param) => {
+    params.push(param)
+    return '([^/]+)'
+  })
+  return { pattern: `^${escaped}\\/?$`, params }
+}
+
+/**
+ * Generate standalone HTTP server with integrated routes
+ */
+function generateServer(
+  options: StandaloneAdapterOptions,
+  routes: Array<{ method: string; path: string; handler: string }>
+): string {
   const lines: string[] = [
     '/**',
     ' * Standalone HTTP Server',
@@ -39,10 +77,15 @@ function generateServer(options: StandaloneAdapterOptions): string {
     ' */',
     '',
     "import { createServer, IncomingMessage, ServerResponse } from 'http'",
-    "import { URL } from 'url'",
     '',
     'export interface ServerContext {',
-    '  repositories: Record<string, unknown>',
+    '  repositories: Record<string, {',
+    '    findMany: () => Promise<unknown[]>',
+    '    findById: (id: string) => Promise<unknown | undefined>',
+    '    create: (data: unknown) => Promise<unknown>',
+    '    update: (id: string, data: unknown) => Promise<unknown | null>',
+    '    delete: (id: string) => Promise<boolean>',
+    '  }>',
     '}',
     '',
     'interface Route {',
@@ -66,6 +109,18 @@ function generateServer(options: StandaloneAdapterOptions): string {
     '  })',
     '}',
     '',
+    'function parseQuery(url: string): Record<string, string> {',
+    '  const query: Record<string, string> = {}',
+    '  const qIndex = url.indexOf("?")',
+    '  if (qIndex === -1) return query',
+    '  const qs = url.slice(qIndex + 1)',
+    '  for (const pair of qs.split("&")) {',
+    '    const [key, value] = pair.split("=")',
+    '    if (key) query[key] = decodeURIComponent(value || "")',
+    '  }',
+    '  return query',
+    '}',
+    '',
     'function json(res: ServerResponse, data: unknown, status = 200) {',
     '  res.writeHead(status, {',
     "    'Content-Type': 'application/json',",
@@ -73,7 +128,7 @@ function generateServer(options: StandaloneAdapterOptions): string {
 
   if (options.cors) {
     lines.push("    'Access-Control-Allow-Origin': '*',")
-    lines.push("    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',")
+    lines.push("    'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',")
     lines.push("    'Access-Control-Allow-Headers': 'Content-Type, Authorization',")
   }
 
@@ -82,7 +137,7 @@ function generateServer(options: StandaloneAdapterOptions): string {
   lines.push('}')
   lines.push('')
 
-  lines.push('function createRoutes(_context: ServerContext): Route[] {')
+  lines.push('function createRoutes(context: ServerContext): Route[] {')
   lines.push('  return [')
   lines.push('    // Health check route')
   lines.push('    {')
@@ -93,7 +148,93 @@ function generateServer(options: StandaloneAdapterOptions): string {
   lines.push("        json(res, { status: 'ok', timestamp: new Date().toISOString() })")
   lines.push('      },')
   lines.push('    },')
-  lines.push('    // Add your routes here')
+
+  // Generate actual route handlers from route definitions
+  for (const route of routes) {
+    const { pattern, params } = pathToRegex(route.path)
+    const handlerParts = route.handler.split('.')
+    const controllerName = handlerParts[0] ?? ''
+    const methodName = handlerParts[1] ?? ''
+    // Extract resource name from controller (e.g., 'userController' -> 'user')
+    const resourceName = controllerName.replace('Controller', '')
+
+    lines.push('    {')
+    lines.push(`      method: '${route.method}',`)
+    lines.push(`      pattern: /${pattern}/,`)
+    lines.push(`      params: [${params.map((p) => `'${p}'`).join(', ')}],`)
+    lines.push('      handler: async (req, res, params, body, ctx) => {')
+    lines.push(`        const repo = ctx.repositories['${resourceName}']`)
+    lines.push('        if (!repo) {')
+    lines.push(`          json(res, { error: 'Repository ${resourceName} not found' }, 500)`)
+    lines.push('          return')
+    lines.push('        }')
+
+    if (methodName === 'list') {
+      lines.push('        try {')
+      lines.push('          const query = parseQuery(req.url || "")')
+      lines.push('          const data = await repo.findMany()')
+      lines.push('          const page = parseInt(query.page || "1", 10)')
+      lines.push('          const limit = parseInt(query.limit || "20", 10)')
+      lines.push('          const start = (page - 1) * limit')
+      lines.push('          const paged = data.slice(start, start + limit)')
+      lines.push('          json(res, {')
+      lines.push('            data: paged,')
+      lines.push(
+        '            meta: { total: data.length, page, limit, totalPages: Math.ceil(data.length / limit), hasMore: start + limit < data.length }'
+      )
+      lines.push('          })')
+      lines.push('        } catch (err) {')
+      lines.push('          json(res, { error: (err as Error).message }, 500)')
+      lines.push('        }')
+    } else if (methodName === 'getById') {
+      lines.push('        try {')
+      lines.push('          const item = await repo.findById(params.id)')
+      lines.push('          if (!item) {')
+      lines.push(`            json(res, { error: '${resourceName} not found' }, 404)`)
+      lines.push('            return')
+      lines.push('          }')
+      lines.push('          json(res, item)')
+      lines.push('        } catch (err) {')
+      lines.push('          json(res, { error: (err as Error).message }, 500)')
+      lines.push('        }')
+    } else if (methodName === 'create') {
+      lines.push('        try {')
+      lines.push('          const item = await repo.create(body as Record<string, unknown>)')
+      lines.push('          json(res, item, 201)')
+      lines.push('        } catch (err) {')
+      lines.push('          json(res, { error: (err as Error).message }, 400)')
+      lines.push('        }')
+    } else if (methodName === 'update') {
+      lines.push('        try {')
+      lines.push('          const existing = await repo.findById(params.id)')
+      lines.push('          if (!existing) {')
+      lines.push(`            json(res, { error: '${resourceName} not found' }, 404)`)
+      lines.push('            return')
+      lines.push('          }')
+      lines.push('          const item = await repo.update(params.id, body as Record<string, unknown>)')
+      lines.push('          json(res, item)')
+      lines.push('        } catch (err) {')
+      lines.push('          json(res, { error: (err as Error).message }, 400)')
+      lines.push('        }')
+    } else if (methodName === 'delete') {
+      lines.push('        try {')
+      lines.push('          const existing = await repo.findById(params.id)')
+      lines.push('          if (!existing) {')
+      lines.push(`            json(res, { error: '${resourceName} not found' }, 404)`)
+      lines.push('            return')
+      lines.push('          }')
+      lines.push('          await repo.delete(params.id)')
+      lines.push('          res.writeHead(204)')
+      lines.push('          res.end()')
+      lines.push('        } catch (err) {')
+      lines.push('          json(res, { error: (err as Error).message }, 500)')
+      lines.push('        }')
+    }
+
+    lines.push('      },')
+    lines.push('    },')
+  }
+
   lines.push('  ]')
   lines.push('}')
   lines.push('')
@@ -107,7 +248,7 @@ function generateServer(options: StandaloneAdapterOptions): string {
     lines.push("    if (req.method === 'OPTIONS') {")
     lines.push('      res.writeHead(204, {')
     lines.push("        'Access-Control-Allow-Origin': '*',")
-    lines.push("        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',")
+    lines.push("        'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',")
     lines.push("        'Access-Control-Allow-Headers': 'Content-Type, Authorization',")
     lines.push('      })')
     lines.push('      res.end()')
@@ -179,9 +320,12 @@ export function createStandaloneAdapter(options: StandaloneAdapterOptions = {}):
     async adapt(code: GeneratedCode, _options: AdapterOptions): Promise<GeneratedCode> {
       const files: GeneratedFile[] = [...code.files]
 
+      // Extract routes from REST generator output
+      const routes = extractRoutes(code)
+
       files.push({
         path: 'server.ts',
-        content: generateServer(mergedOptions),
+        content: generateServer(mergedOptions, routes),
         type: 'source',
       })
       files.push({
@@ -191,10 +335,7 @@ export function createStandaloneAdapter(options: StandaloneAdapterOptions = {}):
       })
 
       // Standalone has no external dependencies - just merge existing ones
-      const dependencies: Dependency[] = [
-        ...(code.dependencies || []),
-        ...this.getDependencies(),
-      ]
+      const dependencies: Dependency[] = [...(code.dependencies || []), ...this.getDependencies()]
 
       return {
         files,

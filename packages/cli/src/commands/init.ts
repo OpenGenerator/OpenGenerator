@@ -109,9 +109,11 @@ export const initCommand = new Command('init')
   .option('-i, --interactive', 'Run interactive wizard')
   .option('-d, --dir <directory>', 'Target directory', '.')
   .option('-f, --force', 'Overwrite existing configuration')
+  .option('--format <format>', 'Config format: json, ts', 'json')
   .action(async (options) => {
     const targetDir = resolve(options.dir)
-    const configPath = join(targetDir, 'opengenerator.config.ts')
+    const configFileName = options.format === 'ts' ? 'opengenerator.config.ts' : '.opengeneratorrc.json'
+    const configPath = join(targetDir, configFileName)
 
     // Check if config already exists
     if (existsSync(configPath) && !options.force) {
@@ -159,7 +161,7 @@ export const initCommand = new Command('init')
     // Generate configuration file
     await withSpinner(
       async () => {
-        const configContent = generateConfigFile(config)
+        const configContent = generateConfigFile(config, options.format)
         await writeFile(configPath, configContent, 'utf-8')
       },
       {
@@ -173,7 +175,7 @@ export const initCommand = new Command('init')
     logger.newLine()
     logger.title('Next steps:')
     logger.list([
-      `Edit ${styled.path('opengenerator.config.ts')} to customize your configuration`,
+      `Edit ${styled.path(configFileName)} to customize your configuration`,
       `Run ${styled.command('opengenerator generate')} to generate code`,
       `Check ${styled.path('./generated')} for the generated files`,
     ])
@@ -321,13 +323,18 @@ async function runWizard(): Promise<Record<string, unknown>> {
 /**
  * Generate configuration file content
  */
-function generateConfigFile(config: Record<string, unknown>): string {
-  const configStr = JSON.stringify(config, null, 2)
-    .replace(/"([^"]+)":/g, '$1:')
-    .replace(/"/g, "'")
+function generateConfigFile(config: Record<string, unknown>, format: string = 'json'): string {
+  if (format === 'ts') {
+    const configStr = JSON.stringify(config, null, 2)
+      .replace(/"([^"]+)":/g, '$1:')
+      .replace(/"/g, "'")
 
-  return `import { defineConfig } from 'opengenerator'
+    return `import { defineConfig } from 'opengenerator'
 
 export default defineConfig(${configStr})
 `
+  }
+
+  // Default: JSON format
+  return JSON.stringify(config, null, 2)
 }

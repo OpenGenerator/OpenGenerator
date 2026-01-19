@@ -1,0 +1,16 @@
+{
+  "schema": "./schema.json",
+  "output": "./generated",
+  "api": {
+    "rest": {
+      "enabled": true
+    }
+  },
+  "adapter": "standalone",
+  "auth": {
+    "strategies": [
+      "apikey"
+    ]
+  },
+  "deploy": []
+}

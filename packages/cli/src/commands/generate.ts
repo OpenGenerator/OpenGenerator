@@ -1,14 +1,188 @@
 import { Command } from 'commander'
-import { resolve } from 'node:path'
+import { resolve, extname } from 'node:path'
 
 import {
   loadConfig,
   createGenerator,
   createPipeline,
+  type OpenGeneratorConfig,
+  type OpenGenerator,
 } from '@opengenerator/core'
 
 import { logger, styled } from '../utils/logger'
 import { createProgress } from '../utils/spinner'
+
+/**
+ * Detect parser type from file extension
+ */
+function detectParserType(schemaPath: string): string {
+  const ext = extname(schemaPath).toLowerCase()
+  switch (ext) {
+    case '.prisma':
+      return 'prisma'
+    case '.json':
+      // Could be JSON Schema or OpenAPI
+      return 'json-schema'
+    case '.yaml':
+    case '.yml':
+      return 'openapi'
+    case '.ts':
+    case '.tsx':
+      // Could be Zod, TypeBox, or VLD
+      return 'zod'
+    default:
+      return 'json-schema'
+  }
+}
+
+/**
+ * Load and configure plugins based on config
+ */
+async function configureGenerator(
+  generator: OpenGenerator,
+  config: OpenGeneratorConfig
+): Promise<void> {
+  // Detect and load parser
+  const parserType = detectParserType(config.schema)
+
+  try {
+    switch (parserType) {
+      case 'prisma': {
+        const { prismaParser } = await import('@opengenerator/parser-prisma')
+        generator.parser(prismaParser())
+        break
+      }
+      case 'openapi': {
+        const { openApiParser } = await import('@opengenerator/parser-openapi')
+        generator.parser(openApiParser())
+        break
+      }
+      case 'zod': {
+        const { zodParser } = await import('@opengenerator/parser-zod')
+        generator.parser(zodParser())
+        break
+      }
+      case 'typebox': {
+        const { typeboxParser } = await import('@opengenerator/parser-typebox')
+        generator.parser(typeboxParser())
+        break
+      }
+      case 'json-schema':
+      default: {
+        const { jsonSchemaParser } = await import('@opengenerator/parser-json-schema')
+        generator.parser(jsonSchemaParser())
+        break
+      }
+    }
+  } catch (error) {
+    throw new Error(`Failed to load parser for ${parserType}: ${(error as Error).message}`)
+  }
+
+  // Load generators based on API config
+  if (config.api?.rest) {
+    try {
+      const { restGenerator } = await import('@opengenerator/gen-rest')
+      generator.generator(restGenerator)
+    } catch (error) {
+      logger.warn(`REST generator not available: ${(error as Error).message}`)
+    }
+  }
+
+  if (config.api?.graphql) {
+    try {
+      const { graphqlGenerator } = await import('@opengenerator/gen-graphql')
+      generator.generator(graphqlGenerator)
+    } catch (error) {
+      logger.warn(`GraphQL generator not available: ${(error as Error).message}`)
+    }
+  }
+
+  if (config.api?.trpc) {
+    try {
+      const { trpcGenerator } = await import('@opengenerator/gen-trpc')
+      generator.generator(trpcGenerator)
+    } catch (error) {
+      logger.warn(`tRPC generator not available: ${(error as Error).message}`)
+    }
+  }
+
+  // Load adapter
+  if (config.adapter) {
+    try {
+      switch (config.adapter) {
+        case 'express': {
+          const { expressAdapter } = await import('@opengenerator/adapter-express')
+          generator.adapter(expressAdapter)
+          break
+        }
+        case 'fastify': {
+          const { fastifyAdapter } = await import('@opengenerator/adapter-fastify')
+          generator.adapter(fastifyAdapter)
+          break
+        }
+        case 'hono': {
+          const { honoAdapter } = await import('@opengenerator/adapter-hono')
+          generator.adapter(honoAdapter)
+          break
+        }
+        case 'koa': {
+          const { koaAdapter } = await import('@opengenerator/adapter-koa')
+          generator.adapter(koaAdapter)
+          break
+        }
+        case 'standalone': {
+          const { standaloneAdapter } = await import('@opengenerator/adapter-standalone')
+          generator.adapter(standaloneAdapter)
+          break
+        }
+      }
+    } catch (error) {
+      logger.warn(`Adapter ${config.adapter} not available: ${(error as Error).message}`)
+    }
+  }
+
+  // Load auth strategies
+  if (config.auth?.strategies) {
+    for (const strategy of config.auth.strategies) {
+      try {
+        switch (strategy) {
+          case 'jwt': {
+            const { jwtAuth } = await import('@opengenerator/auth-jwt')
+            generator.auth(jwtAuth)
+            break
+          }
+          case 'oauth': {
+            const { oauthAuth } = await import('@opengenerator/auth-oauth')
+            generator.auth(oauthAuth)
+            break
+          }
+          case 'session': {
+            const { sessionAuth } = await import('@opengenerator/auth-session')
+            generator.auth(sessionAuth)
+            break
+          }
+          case 'apikey': {
+            const { apiKeyAuth } = await import('@opengenerator/auth-apikey')
+            generator.auth(apiKeyAuth)
+            break
+          }
+          case 'magic-link': {
+            const { magicLinkAuth } = await import('@opengenerator/auth-magic-link')
+            generator.auth(magicLinkAuth)
+            break
+          }
+          case 'passkey': {
+            const { passkeyAuth } = await import('@opengenerator/auth-passkey')
+            generator.auth(passkeyAuth)
+            break
+          }
+        }
+      } catch (error) {
+        logger.warn(`Auth strategy ${strategy} not available: ${(error as Error).message}`)
+      }
+    }
+  }
+}
 
 /**
  * Generate command
@@ -49,11 +223,9 @@ export const generateCommand = new Command('generate')
         logger.newLine()
       }
 
-      // Create generator
+      // Create generator and configure plugins
       const generator = createGenerator()
-
-      // TODO: Load and register plugins based on config
-      // For now, we'll show a placeholder
+      await configureGenerator(generator, config)
 
       // Create pipeline
       const progress = createProgress(6, 'Starting generation...')
@@ -77,10 +249,9 @@ export const generateCommand = new Command('generate')
 
       // Generate
       const result = await pipeline.run({
-        schema: config.schema,
+        ...config,
         output: resolve(config.output),
         dryRun: options.dryRun,
-        ...config,
       })
 
       progress.succeed()

@@ -290,34 +290,35 @@ export function mergeConfigs(
   base: Partial<OpenGeneratorConfig>,
   override: Partial<OpenGeneratorConfig>
 ): OpenGeneratorConfig {
-  const merged = {
+  const merged: Record<string, unknown> = {
     ...base,
     ...override,
-    api: {
-      ...base.api,
-      ...override.api,
-    },
-    auth: {
-      ...base.auth,
-      ...override.auth,
-    },
-    database: {
-      ...base.database,
-      ...override.database,
-    },
-    features: {
-      ...base.features,
-      ...override.features,
-    },
-    codegen: {
-      ...base.codegen,
-      ...override.codegen,
-    },
-    hooks: {
-      ...base.hooks,
-      ...override.hooks,
-    },
-  } as OpenGeneratorConfig
+  }
+
+  // Only merge nested objects if they exist
+  if (base.api || override.api) {
+    merged.api = { ...base.api, ...override.api }
+  }
+
+  if (base.auth || override.auth) {
+    merged.auth = { ...base.auth, ...override.auth }
+  }
+
+  if (base.database || override.database) {
+    merged.database = { ...base.database, ...override.database }
+  }
+
+  if (base.features || override.features) {
+    merged.features = { ...base.features, ...override.features }
+  }
+
+  if (base.codegen || override.codegen) {
+    merged.codegen = { ...base.codegen, ...override.codegen }
+  }
+
+  if (base.hooks || override.hooks) {
+    merged.hooks = { ...base.hooks, ...override.hooks }
+  }
 
   return configSchema.parse(merged)
 }

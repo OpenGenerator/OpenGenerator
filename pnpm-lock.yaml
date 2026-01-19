@@ -646,9 +646,69 @@ importers:
 
   packages/cli:
     dependencies:
+      '@opengenerator/adapter-express':
+        specifier: workspace:*
+        version: link:../adapters/express
+      '@opengenerator/adapter-fastify':
+        specifier: workspace:*
+        version: link:../adapters/fastify
+      '@opengenerator/adapter-hono':
+        specifier: workspace:*
+        version: link:../adapters/hono
+      '@opengenerator/adapter-koa':
+        specifier: workspace:*
+        version: link:../adapters/koa
+      '@opengenerator/adapter-standalone':
+        specifier: workspace:*
+        version: link:../adapters/standalone
+      '@opengenerator/auth-apikey':
+        specifier: workspace:*
+        version: link:../auth/apikey
+      '@opengenerator/auth-jwt':
+        specifier: workspace:*
+        version: link:../auth/jwt
+      '@opengenerator/auth-magic-link':
+        specifier: workspace:*
+        version: link:../auth/magic-link
+      '@opengenerator/auth-oauth':
+        specifier: workspace:*
+        version: link:../auth/oauth
+      '@opengenerator/auth-passkey':
+        specifier: workspace:*
+        version: link:../auth/passkey
+      '@opengenerator/auth-session':
+        specifier: workspace:*
+        version: link:../auth/session
       '@opengenerator/core':
         specifier: workspace:*
         version: link:../core
+      '@opengenerator/gen-graphql':
+        specifier: workspace:*
+        version: link:../generators/graphql
+      '@opengenerator/gen-rest':
+        specifier: workspace:*
+        version: link:../generators/rest
+      '@opengenerator/gen-trpc':
+        specifier: workspace:*
+        version: link:../generators/trpc
+      '@opengenerator/parser-json-schema':
+        specifier: workspace:*
+        version: link:../parsers/json-schema
+      '@opengenerator/parser-openapi':
+        specifier: workspace:*
+        version: link:../parsers/openapi
+      '@opengenerator/parser-prisma':
+        specifier: workspace:*
+        version: link:../parsers/prisma
+      '@opengenerator/parser-typebox':
+        specifier: workspace:*
+        version: link:../parsers/typebox
+      '@opengenerator/parser-vld':
+        specifier: workspace:*
+        version: link:../parsers/vld
+      '@opengenerator/parser-zod':
+        specifier: workspace:*
+        version: link:../parsers/zod
       boxen:
         specifier: ^7.1.0
         version: 7.1.1

@@ -1,0 +1,15 @@
+{
+  "schema": "./schema.json",
+  "output": "./src/generated",
+  "api": {
+    "rest": {
+      "enabled": true,
+      "prefix": "/api/v1"
+    }
+  },
+  "adapter": "standalone",
+  "auth": {
+    "strategies": []
+  },
+  "deploy": []
+}
